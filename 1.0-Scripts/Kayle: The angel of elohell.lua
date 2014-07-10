@@ -7,7 +7,8 @@ local qRange = 650
 local wRange = 900
 local eRange = 525
 local rRange = 900
-local version = 0.1
+local version = 0.27
+local Recalling = false
 
 function OnLoad()
   VP = VPrediction()
@@ -16,11 +17,11 @@ function OnLoad()
   enemyMinions = minionManager(MINION_ENEMY, qRange, myHero, MINION_SORT_MAXHEALTH_DEC)
   jungleMinions = minionManager(MINION_JUNGLE, qRange, myHero, MINION_SORT_MAXHEALTH_DEC)
 
-  Menu = scriptConfig("Kayle: The angel of elohell", "Fantastik Kayle")
+  Menu = scriptConfig("Kayle: The angel of elohell", "Kayle")
   Menu:addSubMenu("Script info", "info")
    Menu.info:addParam("info", "Name: The angel of elohell", SCRIPT_PARAM_INFO, "")
    Menu.info:addParam("info", "Author: ELSN", SCRIPT_PARAM_INFO, "")
-   Menu.info:addParam("info", "Credits: Honda7", SCRIPT_PARAM_INFO, "")
+   Menu.info:addParam("info", "Credits: Honda7, Bilbao", SCRIPT_PARAM_INFO, "")
    Menu.info:addParam("info", "Version: "..version.."", SCRIPT_PARAM_INFO, "")
   Menu:addSubMenu("Kayle - Target Selector", "ts")
     Menu.ts:addTS(ts)
@@ -56,6 +57,9 @@ function OnLoad()
     Menu.autoheal:addParam("amountmana", "Don't auto-heal if mana > %", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
    Menu:addSubMenu("Kayle - Auto-ult", "autoult")
     Menu.autoult:addParam("amount", "Auto-Ult if health < %", SCRIPT_PARAM_SLICE, 5, 1, 100, 0)
+    --Menu.autoult:addParam("recall", "Don't auto-ult on recall", SCRIPT_PARAM_ONOFF, true)
+   Menu:addSubMenu("Extra's", "extra")
+    Menu.extra:addParam("autolevel", "Auto-level skills", SCRIPT_PARAM_LIST, 1, {"No", "R>Q>E>W", "R>E>Q>W"})
   PrintChat("<font color = \"#81F781\">Kayle: The</font> <font color = \"#81F7F3\">angel</font> <font color = \"#81F781\">of</font> <font color = \"#FF0040\">elohell</font> <font color = \"#81F781\">by</font> <font color = \"#FFFF00\">ELSN</font> <font color = \"#81F781\">version "..version.."</font>")
 end
 
@@ -73,6 +77,7 @@ function OnTick()
   if Menu.Kb.jungleclear then JungleClearMode() end
   if Menu.Kb.autoheal then wCast() end
   if Menu.Kb.autoult then rCast() end
+  if Menu.extra.autolevel ~= 1 then AutoLevel() end
 end
   
 function CDHandler()
@@ -91,36 +96,37 @@ function ComboMode()
     if Menu.combo.useR then rCast() end
 end
 
-function qCast() -- works
+function qCast() -- 
     if qReady and ValidTarget(target, qRange) then
       CastSpell(_Q, target)
     end
 end
 
-function wCast() -- works perfectly :)
-    if wReady and myHero.health < (myHero.maxHealth * (Menu.autoheal.amount/100)) then
-      if not Menu.Kb.combo then
-        if myHero.mana > (myHero.maxMana * (Menu.autoheal.amountmana/100)) then
-         CastSpell(_W, myHero)
-        end
-      else CastSpell(_W, myHero)
+function wCast() -- Made this alot better
+  if wReady and myHero.health < (myHero.maxHealth * (Menu.autoheal.amount/100)) and not Recalling then
+    if not Menu.Kb.combo then
+      if myHero.mana > (myHero.maxMana * (Menu.autoheal.amountmana/100)) then
+        CastSpell(_W, myHero)
       end
+    else CastSpell(_W, myHero)
     end
+  end
 end
 
-function eCast() -- works
+function eCast() 
     if eReady and ValidTarget(target, eRange) then
       CastSpell(_E)
     end
 end
 
-function rCast() -- works 
-    if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100))  then 
-      CastSpell(_R, myHero)
+function rCast() -- This still needs the update
+  if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100)) then 
+    CastSpell(_R, myHero)
     end
+  end
 end
 
-function LastHitMode() -- works
+function LastHitMode()
   for i, minion in pairs(enemyMinions.objects) do
     if minion ~= nil and myHero.mana > (myHero.maxMana * (Menu.lasthit.manaamount/100)) then
       if ValidTarget(minion, qRange) and Menu.lasthit.useQ and getDmg("Q", minion, myHero) >= minion.health then
@@ -133,19 +139,22 @@ function LastHitMode() -- works
   end
 end
 
-function LaneclearMode() -- works
-    for i, minion in pairs(enemyMinions.objects) do
-        if minion ~= nil and ValidTarget(minion, qRange) and qReady and Menu.laneclear.useQ and myHero.mana > (myHero.maxMana * (Menu.laneclear.manaamount/100)) then 
-            CastSpell(_Q, minion)
-        end
-     
-        if minion ~= nil and ValidTarget(minion, eRange) and eReady and Menu.laneclear.useE and myHero.mana > (myHero.maxMana * (Menu.laneclear.manaamount/100)) then
-            CastSpell(_E)
-        end
+function LaneclearMode() -- Made this better in the last update
+  for i, minion in pairs(enemyMinions.objects) do
+    if minion ~= nil and ValidTarget(minion, qRange) and qReady and Menu.laneclear.useQ and myHero.mana > (myHero.maxMana * (Menu.laneclear.manaamount/100)) then
+      if getDmg("Q", minion, myHero) >= minion.health then
+        CastSpell(_Q, minion)
+      else
+        CastSpell(_Q, minion)
+      end
     end
+    if minion ~= nil and ValidTarget(minion, eRange) and eReady and Menu.laneclear.useE and myHero.mana > (myHero.maxMana * (Menu.laneclear.manaamount/100)) then
+        CastSpell(_E)
+    end
+  end
 end
 
-function JungleClearMode() -- works
+function JungleClearMode() 
   for i, jminion in pairs(jungleMinions.objects) do
     if jminion ~= nil then
       if ValidTarget(jminion, qRange) and qReady and Menu.jungleclear.useQ and myHero.mana > (myHero.maxMana * (Menu.jungleclear.manaamount/100)) then
@@ -157,3 +166,36 @@ function JungleClearMode() -- works
     end
   end
 end
+
+function AutoLevel() -- Added this in the last update
+  if Menu.extra.autolevel == 2 then abilitySequence = {3, 1, 1, 2, 1, 4, 1, 3, 1, 3, 4, 3, 3, 2, 2, 4, 2, 2} 
+  else abilitySequence = {3, 1, 3, 2, 3, 4, 3, 1, 3, 1, 4, 1, 1, 2, 2}
+  end
+  autoLevelSetSequence(abilitySequence)
+end
+
+
+function OnCreateObj(obj) -- Added this in the last update
+  if obj and obj.name and obj.name:lower():find("teleport") and GetDistance(obj) < 30 then
+    Recalling = true
+   end
+end
+
+function OnDeleteObj(obj) -- Added this in the last update
+  if obj and obj.name and obj.name:lower():find("teleport") and GetDistance(obj) < 30 then
+    Recalling = false
+  end
+end
+
+
+--[[ todo:
+ - An AutoUpdater 
+ - Disable Auto-ult on recall (and after -.-)
+ - Better Last hit mode
+ - Packet cast for VIP users
+ - MMA/SAC support
+ - Better Auto-ult
+ - Item and ignite cast
+ - Draws
+ - W to Gapclose
+ ]]--
