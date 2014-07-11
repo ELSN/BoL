@@ -7,7 +7,7 @@ local qRange = 650
 local wRange = 900
 local eRange = 525
 local rRange = 900
-local version = 0.27
+local version = 0.28
 local Recalling = false
 
 function OnLoad()
@@ -122,7 +122,6 @@ end
 function rCast() -- This still needs the update
   if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100)) then 
     CastSpell(_R, myHero)
-    end
   end
 end
 
