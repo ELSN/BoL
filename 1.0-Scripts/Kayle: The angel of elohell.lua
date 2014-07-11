@@ -7,8 +7,17 @@ local qRange = 650
 local wRange = 900
 local eRange = 525
 local rRange = 900
-local version = 0.28
+local version = 0.38
 local Recalling = false
+ 
+local server_version = tonumber(GetWebResult("raw.github.com", "/ELSN/BoL/master/1.0-Scripts/kayle.version"))
+if server_version > version then
+        PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
+        DownloadFile("https://raw.githubusercontent.com/ELSN/BoL/master/1.0-Scripts/Kayle:%20The%20angel%20of%20elohell.lua", SCRIPT_PATH .. "Kayle: The angel of elohell.lua", function()
+                PrintChat("Script updated. Please reload (F9).")
+        end)
+        return
+end
 
 function OnLoad()
   VP = VPrediction()
@@ -21,7 +30,7 @@ function OnLoad()
   Menu:addSubMenu("Script info", "info")
    Menu.info:addParam("info", "Name: The angel of elohell", SCRIPT_PARAM_INFO, "")
    Menu.info:addParam("info", "Author: ELSN", SCRIPT_PARAM_INFO, "")
-   Menu.info:addParam("info", "Credits: Honda7, Bilbao", SCRIPT_PARAM_INFO, "")
+   Menu.info:addParam("info", "Credits: Honda7, Bilbao, Jorj", SCRIPT_PARAM_INFO, "")
    Menu.info:addParam("info", "Version: "..version.."", SCRIPT_PARAM_INFO, "")
   Menu:addSubMenu("Kayle - Target Selector", "ts")
     Menu.ts:addTS(ts)
