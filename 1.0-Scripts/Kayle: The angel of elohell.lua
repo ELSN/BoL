@@ -197,7 +197,6 @@ end
 
 
 --[[ todo:
- - An AutoUpdater 
  - Disable Auto-ult on recall (and after -.-)
  - Better Last hit mode
  - Packet cast for VIP users
