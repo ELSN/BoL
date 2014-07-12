@@ -7,13 +7,13 @@ local qRange = 650
 local wRange = 900
 local eRange = 525
 local rRange = 900
-local version = 0.38
+local version = 0.43
 local Recalling = false
  
 local server_version = tonumber(GetWebResult("raw.github.com", "/ELSN/BoL/master/1.0-Scripts/kayle.version"))
 if server_version > version then
         PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
-        DownloadFile("https://raw.githubusercontent.com/ELSN/BoL/master/1.0-Scripts/Kayle:%20The%20angel%20of%20elohell.lua", SCRIPT_PATH .. "Kayle: The angel of elohell.lua", function()
+        DownloadFile("https://raw.githubusercontent.com/ELSN/BoL/master/1.0-Scripts/Kayle:%20The%20angel%20of%20elohell.lua", SCRIPT_PATH .. "Kayle the angel of elohell.lua", function()
                 PrintChat("Script updated. Please reload (F9).")
         end)
         return
@@ -66,9 +66,9 @@ function OnLoad()
     Menu.autoheal:addParam("amountmana", "Don't auto-heal if mana > %", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
    Menu:addSubMenu("Kayle - Auto-ult", "autoult")
     Menu.autoult:addParam("amount", "Auto-Ult if health < %", SCRIPT_PARAM_SLICE, 5, 1, 100, 0)
-    --Menu.autoult:addParam("recall", "Don't auto-ult on recall", SCRIPT_PARAM_ONOFF, true)
+    Menu.autoult:addParam("recall", "Don't auto-ult on recall", SCRIPT_PARAM_ONOFF, true)
    Menu:addSubMenu("Extra's", "extra")
-    Menu.extra:addParam("autolevel", "Auto-level skills", SCRIPT_PARAM_LIST, 1, {"No", "R>Q>E>W", "R>E>Q>W"})
+    Menu.extra:addParam("autolevel", "Auto-level skills", SCRIPT_PARAM_LIST, 1, {"No", "R>Q>E>W", "R>E>Q>W", "R>E>W>Q"})
   PrintChat("<font color = \"#81F781\">Kayle: The</font> <font color = \"#81F7F3\">angel</font> <font color = \"#81F781\">of</font> <font color = \"#FF0040\">elohell</font> <font color = \"#81F781\">by</font> <font color = \"#FFFF00\">ELSN</font> <font color = \"#81F781\">version "..version.."</font>")
 end
 
@@ -111,7 +111,7 @@ function qCast() --
     end
 end
 
-function wCast() -- Made this alot better
+function wCast() 
   if wReady and myHero.health < (myHero.maxHealth * (Menu.autoheal.amount/100)) and not Recalling then
     if not Menu.Kb.combo then
       if myHero.mana > (myHero.maxMana * (Menu.autoheal.amountmana/100)) then
@@ -128,9 +128,16 @@ function eCast()
     end
 end
 
-function rCast() -- This still needs the update
-  if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100)) then 
+function rCast() -- Added Stop on recall
+  if Menu.autoult.recall then
+    if not Recalling and not InFountain() then 
+      if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100)) then 
     CastSpell(_R, myHero)
+      end
+    end
+  else if rReady and myHero.health < (myHero.maxHealth * (Menu.autoult.amount/100)) then 
+    CastSpell(_R, myHero)
+    end
   end
 end
 
@@ -147,7 +154,7 @@ function LastHitMode()
   end
 end
 
-function LaneclearMode() -- Made this better in the last update
+function LaneclearMode() 
   for i, minion in pairs(enemyMinions.objects) do
     if minion ~= nil and ValidTarget(minion, qRange) and qReady and Menu.laneclear.useQ and myHero.mana > (myHero.maxMana * (Menu.laneclear.manaamount/100)) then
       if getDmg("Q", minion, myHero) >= minion.health then
@@ -175,29 +182,29 @@ function JungleClearMode()
   end
 end
 
-function AutoLevel() -- Added this in the last update
+function AutoLevel() -- Added a new mode
   if Menu.extra.autolevel == 2 then abilitySequence = {3, 1, 1, 2, 1, 4, 1, 3, 1, 3, 4, 3, 3, 2, 2, 4, 2, 2} 
-  else abilitySequence = {3, 1, 3, 2, 3, 4, 3, 1, 3, 1, 4, 1, 1, 2, 2}
+  elseif Menu.extra.autolevel == 3 then abilitySequence = {3, 1, 3, 2, 3, 4, 3, 1, 3, 1, 4, 1, 1, 2, 2, 4, 2, 2}
+  else abilitySequence = {3, 2, 3, 1, 3, 4, 3, 2, 3, 2, 4, 2, 2, 1, 1, 4, 1, 1}
   end
   autoLevelSetSequence(abilitySequence)
 end
 
 
-function OnCreateObj(obj) -- Added this in the last update
+function OnCreateObj(obj) 
   if obj and obj.name and obj.name:lower():find("teleport") and GetDistance(obj) < 30 then
     Recalling = true
    end
 end
 
-function OnDeleteObj(obj) -- Added this in the last update
+function OnDeleteObj(obj) 
   if obj and obj.name and obj.name:lower():find("teleport") and GetDistance(obj) < 30 then
     Recalling = false
   end
 end
 
 
---[[ todo:
- - Disable Auto-ult on recall (and after -.-)
+--[[ todo: 
  - Better Last hit mode
  - Packet cast for VIP users
  - MMA/SAC support
@@ -205,4 +212,5 @@ end
  - Item and ignite cast
  - Draws
  - W to Gapclose
+ - Better W mode
  ]]--
