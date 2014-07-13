@@ -251,7 +251,6 @@ if VIP_USER then
 end
 
 --[[ todo: 
- - Draws
  - Item and ignite cast
  - W to Gapclose
  - Packet cast for VIP users
@@ -260,3 +259,4 @@ end
  - Better W mode
  - Better draw for free users
  ]]--
+
