@@ -5,16 +5,17 @@ require "VPrediction"
 
 local qRange = 650
 local wRange = 900
-local eRange = 525
+local eRange, eRangeMelee = 525, 125
 local rRange = 900
-local version = 0.43
+local version = 0.55
 local Recalling = false
+local eDmg = nil
  
 local server_version = tonumber(GetWebResult("raw.github.com", "/ELSN/BoL/master/1.0-Scripts/kayle.version"))
 if server_version > version then
-        PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
+        PrintChat("<font color = \"#81F781\">Kayle the angel of elohell is outdated. Updating to version: </font>" .. server_version .. "<font color = \"#81F781\"> ...</font>")
         DownloadFile("https://raw.githubusercontent.com/ELSN/BoL/master/1.0-Scripts/Kayle:%20The%20angel%20of%20elohell.lua", SCRIPT_PATH .. "Kayle the angel of elohell.lua", function()
-                PrintChat("Script updated. Please reload (F9).")
+                PrintChat("<font color = \"#81F781\">Script updated. Please reload (F9).</font>")
         end)
         return
 end
@@ -67,7 +68,12 @@ function OnLoad()
    Menu:addSubMenu("Kayle - Auto-ult", "autoult")
     Menu.autoult:addParam("amount", "Auto-Ult if health < %", SCRIPT_PARAM_SLICE, 5, 1, 100, 0)
     Menu.autoult:addParam("recall", "Don't auto-ult on recall", SCRIPT_PARAM_ONOFF, true)
-   Menu:addSubMenu("Extra's", "extra")
+   Menu:addSubMenu("Kayle - Extra's", "extra")
+    Menu.extra:addSubMenu("Spell draws", "draw")
+     Menu.extra.draw:addParam("Q", "Draw Q range", SCRIPT_PARAM_ONOFF, true)
+     Menu.extra.draw:addParam("W", "Draw W range", SCRIPT_PARAM_ONOFF, true)
+     Menu.extra.draw:addParam("E", "Draw E range (works best for VIP)", SCRIPT_PARAM_ONOFF, true)
+     Menu.extra.draw:addParam("R", "Draw R range", SCRIPT_PARAM_ONOFF, true)
     Menu.extra:addParam("autolevel", "Auto-level skills", SCRIPT_PARAM_LIST, 1, {"No", "R>Q>E>W", "R>E>Q>W", "R>E>W>Q"})
   PrintChat("<font color = \"#81F781\">Kayle: The</font> <font color = \"#81F7F3\">angel</font> <font color = \"#81F781\">of</font> <font color = \"#FF0040\">elohell</font> <font color = \"#81F781\">by</font> <font color = \"#FFFF00\">ELSN</font> <font color = \"#81F781\">version "..version.."</font>")
 end
@@ -87,6 +93,18 @@ function OnTick()
   if Menu.Kb.autoheal then wCast() end
   if Menu.Kb.autoult then rCast() end
   if Menu.extra.autolevel ~= 1 then AutoLevel() end
+end
+
+function OnDraw()
+  if Menu.extra.draw.Q and qReady then DrawCircle(myHero.x, myHero.y, myHero.z, qRange, 0x6666FF) end
+  if Menu.extra.draw.W and wReady then DrawCircle(myHero.x, myHero.y, myHero.z, wRange, 0x6666FF) end 
+  if VIP_USER then
+    if Menu.extra.draw.E and eReady and not eOn then DrawCircle(myHero.x, myHero.y, myHero.z, eRangeMelee, 0x6666FF) end
+    if Menu.extra.draw.E and eReady and eOn then DrawCircle(myHero.x, myHero.y, myHero.z, eRange, 0x6666FF) end
+  else if Menu.extra.draw.E and eReady then DrawCircle(myHero.x, myHero.y, myHero.z, eRangeMelee, 0x6666FF) end
+       if Menu.extra.draw.E and not eReady then DrawCircle(myHero.x, myHero.y, myHero.z, eRange, 0x6666FF) end
+  end
+  if Menu.extra.draw.R and rReady then DrawCircle(myHero.x, myHero.y, myHero.z, rRange, 0x6666FF) end
 end
   
 function CDHandler()
@@ -142,17 +160,28 @@ function rCast() -- Added Stop on recall
 end
 
 function LastHitMode()
+  eDamage()
   for i, minion in pairs(enemyMinions.objects) do
     if minion ~= nil and myHero.mana > (myHero.maxMana * (Menu.lasthit.manaamount/100)) then
       if ValidTarget(minion, qRange) and Menu.lasthit.useQ and getDmg("Q", minion, myHero) >= minion.health then
         CastSpell(_Q, minion)
       end
-      if ValidTarget(minion, eRange) and Menu.lasthit.useE and (getDmg("AD", minion, myHero) + (30)) >= minion.health then 
+      if ValidTarget(minion, eRange) and Menu.lasthit.useE and (getDmg("AD", minion, myHero) + (eDmg + (myHero.ap * 0.2 ))) >= minion.health then 
         CastSpell(_E)
       end
     end
   end
 end
+
+function eDamage()
+  if myHero:GetSpellData(_E).level == 1 then eDmg = 20 
+  elseif myHero:GetSpellData(_E).level == 2 then eDmg = 30 
+  elseif myHero:GetSpellData(_E).level == 3 then eDmg = 40
+  elseif myHero:GetSpellData(_E).level == 4 then eDmg = 50
+  elseif myHero:GetSpellData(_E).level == 5 then eDmg = 60
+  end
+end 
+
 
 function LaneclearMode() 
   for i, minion in pairs(enemyMinions.objects) do
@@ -203,14 +232,31 @@ function OnDeleteObj(obj)
   end
 end
 
+if VIP_USER then
+  function OnGainBuff(unit, buff)
+    if unit.isMe and buff ~= nil then
+      if buff.name == "JudicatorRighteousFury" then 
+        eOn = true 
+      end
+    end
+  end
+
+  function OnLoseBuff(unit, buff)
+    if unit.isMe and buff ~= nil then
+      if buff.name == "JudicatorRighteousFury" then
+        eOn = false
+      end
+    end    
+  end
+end
 
 --[[ todo: 
- - Better Last hit mode
+ - Draws
+ - Item and ignite cast
+ - W to Gapclose
  - Packet cast for VIP users
  - MMA/SAC support
  - Better Auto-ult
- - Item and ignite cast
- - Draws
- - W to Gapclose
  - Better W mode
+ - Better draw for free users
  ]]--
