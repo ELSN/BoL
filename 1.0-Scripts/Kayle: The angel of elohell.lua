@@ -7,9 +7,11 @@ local qRange = 650
 local wRange = 900
 local eRange, eRangeMelee = 525, 125
 local rRange = 900
-local version = 0.55
+local version = 0.6
 local Recalling = false
 local eDmg = nil
+local dfgSlot, hextechSlot, bilgeSlot, botrkSlot, youmuuSlot, sotdSlot = nil, nil, nil, nil, nil, nil
+local dfgRange,hextechRange, bilgeRange, botrkRange, youmuuRange, sotdRange = 750, 700, 500, 450, 525, 525
  
 local server_version = tonumber(GetWebResult("raw.github.com", "/ELSN/BoL/master/1.0-Scripts/kayle.version"))
 if server_version > version then
@@ -112,10 +114,18 @@ function CDHandler()
     wReady = myHero:CanUseSpell(_W) == READY
     eReady = myHero:CanUseSpell(_E) == READY
     rReady = myHero:CanUseSpell(_R) == READY
+	
+	dfgSlot = GetInventorySlotItem(3128)
+	hextechSlot = GetInventorySlotItem(3146)
+	bilgeSlot = GetInventorySlotItem(3144)
+	botrkSlot = GetInventorySlotItem(3153)
+	youmuuSlot = GetInventorySlotItem(3142)
+	sotdSlot = GetInventorySlotItem(3131)
 end 
 
 function ComboMode()
   if target ~= nil then
+	ItemUsage()
     if Menu.combo.useQ then qCast() end
     if Menu.combo.useE then eCast() end
   end
@@ -123,6 +133,43 @@ function ComboMode()
     if Menu.combo.useR then rCast() end
 end
 
+function ItemUsage()
+	if ValidTarget(target, dfgRange) and dfgSlot ~= nil then
+		CastItem(dfgSlot, target)
+	end
+	if ValidTarget(target, hextechRange) and hextechSlot ~= nil then
+		CastItem(hextechSlot, target)
+	end
+	if ValidTarget(target, bilgeRange) and bilgeSlot ~= nil then
+		CastItem(bilgeSlot, target)
+	end
+	if ValidTarget(target, botrkRange) and botrkSlot ~= nil then
+		CastItem(botrkSlot, target)
+	end
+	if ValidTarget(target, youmuuRange) then
+		if VIP_USER then
+			if eOn then 
+				CastItem(youmuuSlot)
+			end
+		else
+			if not eReady then
+				CastItem(youmuuSlot)
+			end
+		end
+	end
+	if ValidTarget(target, sotdRange) then
+		if VIP_USER then
+			if eOn then
+				CastItem(sotdSlot)
+			end
+		else
+			if not eReady then
+				CastItem(sotdSlot)
+			end
+		end
+	end
+end
+		
 function qCast() -- 
     if qReady and ValidTarget(target, qRange) then
       CastSpell(_Q, target)
@@ -251,7 +298,7 @@ if VIP_USER then
 end
 
 --[[ todo: 
- - Item and ignite cast
+ - ignite cast
  - W to Gapclose
  - Packet cast for VIP users
  - MMA/SAC support
@@ -259,4 +306,3 @@ end
  - Better W mode
  - Better draw for free users
  ]]--
-
